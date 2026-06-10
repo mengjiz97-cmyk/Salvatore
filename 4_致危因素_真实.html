@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中国受威胁物种致危因素分析</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f1310;
+      color: #ecefe4;
+      font-family: "Noto Serif SC", "PingFang SC", "Microsoft YaHei", serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #ecefe4;
+    }
+    .subtitle {
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(236,239,228,0.45);
+      line-height: 1.7;
+    }
+    #chart {
+      width: min(820px, 96vw);
+      height: 380px;
+      margin-top: 20px;
+    }
+    .note {
+      margin-top: 18px;
+      font-size: 11px;
+      color: rgba(236,239,228,0.35);
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>中国受威胁物种主要致危因素</h1>
+  <p class="subtitle">
+    数据来源：IUCN 红色名录 Threats 字段（旗舰物种示例版）<br>
+    受威胁物种中受各因素影响的比例，物种可同时受多种威胁，故合计 &gt; 100%
+  </p>
+</div>
+
+<div id="chart"></div>
+
+<p class="note">
+  * 示例数据基于 11 种中国旗舰濒危动物的 IUCN 威胁记录；运行 fetch_iucn_threats.py 可替换为完整数据<br>
+  * 栖息地破坏含 IUCN codes 1–4, 7；非法捕猎/过度利用含 5–6；外来物种入侵含 8；环境污染含 9；气候变化含 11
+</p>
+
+<script>
+  // ─── DATA ── 由 fetch_iucn_threats.py 自动更新，也可手改 ──────────────
+  const DATA = [{"factor":"栖息地破坏","count":11,"pct":100.0},{"factor":"非法捕猎/过度利用","count":10,"pct":90.9},{"factor":"环境污染","count":3,"pct":27.3},{"factor":"气候变化","count":3,"pct":27.3},{"factor":"外来物种入侵","count":1,"pct":9.1}];
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const COLOR_MAP = {
+    "栖息地破坏":      "#e07b2f",
+    "非法捕猎/过度利用": "#c0392b",
+    "环境污染":        "#7d8a4f",
+    "气候变化":        "#4aa3e7",
+    "外来物种入侵":    "#b07ad6",
+  };
+
+  // Sort descending by pct for display
+  const sorted = [...DATA].sort((a, b) => b.pct - a.pct);
+  const factors = sorted.map(d => d.factor);
+  const pcts    = sorted.map(d => d.pct);
+  const counts  = sorted.map(d => d.count);
+  const colors  = factors.map(f => COLOR_MAP[f] || "#888");
+
+  const chart = echarts.init(document.getElementById("chart"), null, { renderer: "canvas" });
+
+  chart.setOption({
+    backgroundColor: "#0f1310",
+    grid: { top: 20, bottom: 40, left: 10, right: 80, containLabel: true },
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "shadow" },
+      backgroundColor: "rgba(15,19,16,0.92)",
+      borderColor: "rgba(236,239,228,0.15)",
+      textStyle: { color: "#ecefe4", fontFamily: '"Noto Serif SC","PingFang SC",serif', fontSize: 13 },
+      formatter: params => {
+        const d = params[0];
+        const idx = factors.indexOf(d.name);
+        return `<b>${d.name}</b><br/>影响物种数：${counts[idx]} 种<br/>占比：${d.value}%`;
+      }
+    },
+    xAxis: {
+      type: "value",
+      max: 110,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: "rgba(236,239,228,0.45)",
+        fontFamily: '"Noto Serif SC","PingFang SC",serif',
+        formatter: v => v + "%",
+      },
+      splitLine: { lineStyle: { color: "rgba(140,150,120,0.10)" } },
+    },
+    yAxis: {
+      type: "category",
+      data: factors,
+      inverse: false,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: {
+        color: "#ecefe4",
+        fontFamily: '"Noto Serif SC","PingFang SC",serif',
+        fontSize: 13,
+      },
+    },
+    series: [{
+      type: "bar",
+      data: pcts.map((v, i) => ({ value: v, itemStyle: { color: colors[i], borderRadius: [0, 3, 3, 0] } })),
+      barMaxWidth: 36,
+      label: {
+        show: true,
+        position: "right",
+        formatter: p => p.value + "%",
+        color: "rgba(236,239,228,0.75)",
+        fontFamily: '"Noto Serif SC","PingFang SC",serif',
+        fontSize: 12,
+      },
+    }],
+  });
+
+  window.addEventListener("resize", () => chart.resize());
+</script>
+</body>
+</html>
