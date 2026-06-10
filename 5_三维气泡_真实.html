@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>中国濒危物种三维气泡图</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f1310;
+      color: #ecefe4;
+      font-family: "Noto Serif SC", "PingFang SC", "Microsoft YaHei", serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
+    .header { text-align: center; margin-bottom: 8px; }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #ecefe4;
+    }
+    .subtitle {
+      margin-top: 10px;
+      font-size: 12px;
+      color: rgba(236,239,228,0.45);
+      line-height: 1.7;
+    }
+    #chart {
+      width: min(860px, 96vw);
+      height: 520px;
+      margin-top: 20px;
+    }
+    .note {
+      margin-top: 18px;
+      font-size: 11px;
+      color: rgba(236,239,228,0.35);
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>中国濒危物种：体重 × 现存数量</h1>
+  <p class="subtitle">
+    X 轴：成体体重（kg，对数）／Y 轴：现存种群数量（只，对数）／气泡大小：log₁₀(体重)／颜色：IUCN 等级<br>
+    体重来源：PanTHERIA / EltonTraits 1.0 / FishBase；IUCN 等级与种群数据：IUCN 红色名录 API
+  </p>
+</div>
+
+<div id="chart"></div>
+
+<p class="note">
+  * 现存数量为野生种群估计值，部分物种无官方数值（显示为 1，仅供布局）；运行 fetch_bubble_data.py 替换为真实数据<br>
+  * 体重缺失物种已从图中剔除；气泡颜色：
+  <span style="color:#D81E05">■ CR 极危</span>
+  <span style="color:#FC7F3F"> ■ EN 濒危</span>
+  <span style="color:#F9E814"> ■ VU 易危</span>
+  <span style="color:#CCE226"> ■ NT 近危</span>
+  <span style="color:#542344"> ■ EW 野外灭绝</span>
+</p>
+
+<script>
+  // ─── SP ── 由 fetch_bubble_data.py 自动更新，也可手改 ─────────────────────
+  const SP = [
+    {"name_cn":"大熊猫",     "name_sci":"Ailuropoda melanoleuca",    "weight_kg":100,   "population":1864,  "iucn":"VU"},
+    {"name_cn":"朱鹮",       "name_sci":"Nipponia nippon",           "weight_kg":1.8,   "population":9000,  "iucn":"EN"},
+    {"name_cn":"长江江豚",   "name_sci":"Neophocaena asiaeorientalis","weight_kg":50,    "population":1012,  "iucn":"CR"},
+    {"name_cn":"滇金丝猴",   "name_sci":"Rhinopithecus bieti",       "weight_kg":15,    "population":3000,  "iucn":"EN"},
+    {"name_cn":"亚洲象",     "name_sci":"Elephas maximus",           "weight_kg":4000,  "population":300,   "iucn":"EN"},
+    {"name_cn":"雪豹",       "name_sci":"Panthera uncia",            "weight_kg":40,    "population":2500,  "iucn":"VU"},
+    {"name_cn":"东北虎",     "name_sci":"Panthera tigris",           "weight_kg":200,   "population":50,    "iucn":"EN"},
+    {"name_cn":"藏羚羊",     "name_sci":"Pantholops hodgsonii",      "weight_kg":35,    "population":150000,"iucn":"NT"},
+    {"name_cn":"海南长臂猿", "name_sci":"Nomascus hainanus",         "weight_kg":7,     "population":35,    "iucn":"CR"},
+    {"name_cn":"扬子鳄",     "name_sci":"Alligator sinensis",        "weight_kg":36,    "population":200,   "iucn":"CR"},
+    {"name_cn":"中华穿山甲", "name_sci":"Manis pentadactyla",        "weight_kg":5,     "population":null,  "iucn":"CR"}
+  ];
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const IUCN_COLOR = {
+    CR: "#D81E05", EN: "#FC7F3F", VU: "#F9E814",
+    NT: "#CCE226", LC: "#60C659", EW: "#542344",
+    DD: "#aaaaaa", NE: "#666666",
+  };
+  const FONT = '"Noto Serif SC","PingFang SC","Microsoft YaHei",serif';
+  const LABEL_COLOR = "rgba(236,239,228,0.55)";
+
+  // Filter out entries with no weight; replace null population with 1 (log-safe placeholder)
+  const valid = SP.filter(d => d.weight_kg != null && d.weight_kg > 0);
+
+  const seriesData = valid.map(d => {
+    const pop = (d.population != null && d.population > 0) ? d.population : 1;
+    const logW = Math.log10(d.weight_kg);
+    return {
+      value: [d.weight_kg, pop, logW],
+      name: d.name_cn,
+      sci: d.name_sci,
+      iucn: d.iucn,
+      popReal: d.population,
+      itemStyle: { color: IUCN_COLOR[d.iucn] || "#aaa", opacity: 0.85 },
+      symbolSize: Math.max(10, logW * 18),
+      label: {
+        show: true,
+        formatter: d.name_cn,
+        position: "top",
+        color: LABEL_COLOR,
+        fontFamily: FONT,
+        fontSize: 11,
+      },
+    };
+  });
+
+  const chart = echarts.init(document.getElementById("chart"), null, { renderer: "canvas" });
+
+  chart.setOption({
+    backgroundColor: "#0f1310",
+    grid: { top: 30, bottom: 60, left: 20, right: 30, containLabel: true },
+    tooltip: {
+      trigger: "item",
+      backgroundColor: "rgba(15,19,16,0.93)",
+      borderColor: "rgba(236,239,228,0.15)",
+      textStyle: { color: "#ecefe4", fontFamily: FONT, fontSize: 13 },
+      formatter: p => {
+        const d = p.data;
+        const popStr = d.popReal != null ? d.popReal.toLocaleString() + " 只" : "暂无数据";
+        return `<b>${d.name}</b>　<i style="color:${IUCN_COLOR[d.iucn]||'#aaa'}">${d.iucn}</i><br/>
+                学名：${d.sci}<br/>
+                体重：${d.value[0].toLocaleString()} kg<br/>
+                现存数量：${popStr}`;
+      },
+    },
+    xAxis: {
+      type: "log",
+      name: "成体体重（kg）",
+      nameLocation: "middle",
+      nameGap: 32,
+      nameTextStyle: { color: LABEL_COLOR, fontFamily: FONT, fontSize: 12 },
+      axisLine: { lineStyle: { color: "rgba(236,239,228,0.2)" } },
+      axisTick: { lineStyle: { color: "rgba(236,239,228,0.2)" } },
+      axisLabel: { color: LABEL_COLOR, fontFamily: FONT, formatter: v => v >= 1000 ? (v/1000)+"t" : v+"kg" },
+      splitLine: { lineStyle: { color: "rgba(140,150,120,0.10)" } },
+    },
+    yAxis: {
+      type: "log",
+      name: "现存数量（只）",
+      nameLocation: "middle",
+      nameGap: 52,
+      nameTextStyle: { color: LABEL_COLOR, fontFamily: FONT, fontSize: 12 },
+      axisLine: { lineStyle: { color: "rgba(236,239,228,0.2)" } },
+      axisTick: { lineStyle: { color: "rgba(236,239,228,0.2)" } },
+      axisLabel: { color: LABEL_COLOR, fontFamily: FONT },
+      splitLine: { lineStyle: { color: "rgba(140,150,120,0.10)" } },
+    },
+    series: [{
+      type: "scatter",
+      data: seriesData,
+      emphasis: {
+        scale: 1.15,
+        label: { show: true, color: "#ecefe4", fontSize: 12 },
+      },
+    }],
+  });
+
+  window.addEventListener("resize", () => chart.resize());
+</script>
+</body>
+</html>
