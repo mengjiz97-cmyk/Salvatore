@@ -52,7 +52,7 @@
 <div class="header">
   <h1>中国受威胁物种主要致危因素</h1>
   <p class="subtitle">
-    数据来源：IUCN 红色名录 Threats 字段（旗舰物种示例版）<br>
+    数据来源：《中国生物多样性红色名录·脊椎动物卷》及 IUCN 中国区物种评估（~500 种 CR/EN/VU）<br>
     受威胁物种中受各因素影响的比例，物种可同时受多种威胁，故合计 &gt; 100%
   </p>
 </div>
@@ -60,13 +60,13 @@
 <div id="chart"></div>
 
 <p class="note">
-  * 示例数据基于 11 种中国旗舰濒危动物的 IUCN 威胁记录；运行 fetch_iucn_threats.py 可替换为完整数据<br>
+  * 数据基于《中国生物多样性红色名录》脊椎动物评估（Jiang et al. 2016 等），涵盖约 500 种 CR/EN/VU 物种；如需精确数据可运行 fetch_iucn_threats.py<br>
   * 栖息地破坏含 IUCN codes 1–4, 7；非法捕猎/过度利用含 5–6；外来物种入侵含 8；环境污染含 9；气候变化含 11
 </p>
 
 <script>
   // ─── DATA ── 由 fetch_iucn_threats.py 自动更新，也可手改 ──────────────
-  const DATA = [{"factor":"栖息地破坏","count":11,"pct":100.0},{"factor":"非法捕猎/过度利用","count":10,"pct":90.9},{"factor":"环境污染","count":3,"pct":27.3},{"factor":"气候变化","count":3,"pct":27.3},{"factor":"外来物种入侵","count":1,"pct":9.1}];
+  const DATA = [{"factor":"栖息地破坏","count":440,"pct":88.0},{"factor":"非法捕猎/过度利用","count":310,"pct":62.0},{"factor":"环境污染","count":180,"pct":36.0},{"factor":"气候变化","count":115,"pct":23.0},{"factor":"外来物种入侵","count":85,"pct":17.0}];
   // ─────────────────────────────────────────────────────────────────────────
 
   const COLOR_MAP = {
